@@ -34,7 +34,7 @@ elif len(sys.argv) == 6:
     fc_count = int(sys.argv[5])
 
 # Loading MNIST Dataset
-(x_train, y_train), (x_test, y_test)  = mnist.load_data()
+(x_train, y_train), (x_test, y_test)  = cifar10.load_data()
 
 # Finding No. of Rows and Columns
 rows_of_img = x_train[0].shape[0]
