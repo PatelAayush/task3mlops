@@ -2,7 +2,7 @@ import keras, sys
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
-from keras.datasets import cifar10
+from keras.datasets import mnist
 from keras.utils import np_utils
 
 # Making Command line arguments optional
@@ -34,7 +34,7 @@ elif len(sys.argv) == 6:
     fc_count = int(sys.argv[5])
 
 # Loading MNIST Dataset
-(x_train, y_train), (x_test, y_test)  = cifar10.load_data()
+(x_train, y_train), (x_test, y_test)  = mnist.load_data()
 
 # Finding No. of Rows and Columns
 rows_of_img = x_train[0].shape[0]
