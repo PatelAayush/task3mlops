@@ -1,113 +1,92 @@
-import keras, sys
+import sys
+from matplotlib import pyplot
+from keras.datasets import cifar10
+from keras.utils import to_categorical
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras.datasets import mnist
-from keras.utils import np_utils
-
-# Making Command line arguments optional
-# Tweeking Model 
-ker_size = 2
-batch_size_passed = 1024
-no_of_epochs = 1
-crp_count = 1
-fc_count = 1
-if len(sys.argv) == 2:
-    ker_size = int(sys.argv[1])
-elif len(sys.argv) == 3:
-    ker_size = int(sys.argv[1])
-    batch_size_passed = int(sys.argv[2])
-elif len(sys.argv) == 4:
-    ker_size = int(sys.argv[1])
-    batch_size_passed = int(sys.argv[2])
-    no_of_epochs = int(sys.argv[3])
-elif len(sys.argv) == 5:
-    ker_size = int(sys.argv[1])
-    batch_size_passed = int(sys.argv[2])
-    no_of_epochs = int(sys.argv[3])
-    crp_count = int(sys.argv[4])
-elif len(sys.argv) == 6:
-    ker_size = int(sys.argv[1])
-    batch_size_passed = int(sys.argv[2])
-    no_of_epochs = int(sys.argv[3])
-    crp_count = int(sys.argv[4])
-    fc_count = int(sys.argv[5])
-
-# Loading MNIST Dataset
-(x_train, y_train), (x_test, y_test)  = mnist.load_data()
-
-# Finding No. of Rows and Columns
-rows_of_img = x_train[0].shape[0]
-cols_of_img = x_train[1].shape[0]
-
-# store the shape of a single image 
-input_shape = (rows_of_img, cols_of_img, 1)
-
-# change our image type to float32 data type
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
-
-# Featuring Scaling - Normalization
-x_train /= 255
-x_test /= 255
-
-# Doing One-Hot Encoding
-y_train = np_utils.to_categorical(y_train)
-y_test = np_utils.to_categorical(y_test)
-
-n_classes = y_test.shape[1]
-
-# Set Kernel Size
-kernel_size = (ker_size,ker_size)
-
-# Creating model
-model = Sequential()
-
-# Adding CRP layers
-model.add(Conv2D(20,kernel_size,padding="same",input_shape=input_shape))
-model.add(Activation("relu"))
-model.add(MaxPooling2D(pool_size=(2,2)))
-
-count = 1
-while count <= crp_count:
-    model.add(Conv2D(50,kernel_size,padding="same"))
-    model.add(Activation("relu"))
-    model.add(MaxPooling2D(pool_size=(2,2), strides=(2,2)))
-    count+=1
-    
-# FC
-model.add(Flatten())
-
-count = 1
-while count <= fc_count:
-    model.add(Dense(500))
-    model.add(Activation("relu"))
-    count+=1
-    
-model.add(Dense(n_classes))
-model.add(Activation("softmax")) 
-
-model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adadelta(),metrics=['accuracy'])
-
-print(model.summary())
-
-# Conerting Images to 4D
-x_train = x_train.reshape(x_train.shape[0], rows_of_img, cols_of_img, 1)
-x_test = x_test.reshape(x_test.shape[0], rows_of_img, cols_of_img, 1)
-
-# Training Parameters
-batch_size = batch_size_passed
-epochs = no_of_epochs
-
-history = model.fit(x_train, y_train,
-          batch_size=batch_size,
-          epochs=epochs,
-          validation_data=(x_test, y_test), 
-          shuffle=True)
-
-model.save("mnist_LeNet.h5")   
-
-# Evaluating the accuracy
-scores = model.evaluate(x_test, y_test, verbose=1) 
-print("\nAccuracy is :-\n") 
-print(int(scores[1] * 100)) 
+from keras.layers import Conv2D
+from keras.layers import MaxPooling2D
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.optimizers import SGD
+from keras.preprocessing.image import ImageDataGenerator
+ 
+# load train and test dataset
+def load_dataset():
+	# load dataset
+	(trainX, trainY), (testX, testY) = cifar10.load_data()
+	# one hot encode target values
+	trainY = to_categorical(trainY)
+	testY = to_categorical(testY)
+	return trainX, trainY, testX, testY
+ 
+# scale pixels
+def prep_pixels(train, test):
+	# convert from integers to floats
+	train_norm = train.astype('float32')
+	test_norm = test.astype('float32')
+	# normalize to range 0-1
+	train_norm = train_norm / 255.0
+	test_norm = test_norm / 255.0
+	# return normalized images
+	return train_norm, test_norm
+ 
+# define cnn model
+def define_model():
+	model = Sequential()
+	model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same', input_shape=(32, 32, 3)))
+	model.add(Conv2D(32, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+	model.add(MaxPooling2D((2, 2)))
+	model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+	model.add(Conv2D(64, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+	model.add(MaxPooling2D((2, 2)))
+	model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+	model.add(Conv2D(128, (3, 3), activation='relu', kernel_initializer='he_uniform', padding='same'))
+	model.add(MaxPooling2D((2, 2)))
+	model.add(Flatten())
+	model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
+	model.add(Dense(10, activation='softmax'))
+	# compile model
+	opt = SGD(lr=0.001, momentum=0.9)
+	model.compile(optimizer=opt, loss='categorical_crossentropy', metrics=['accuracy'])
+	return model
+ 
+# plot diagnostic learning curves
+def summarize_diagnostics(history):
+	# plot loss
+	pyplot.subplot(211)
+	pyplot.title('Cross Entropy Loss')
+	pyplot.plot(history.history['loss'], color='blue', label='train')
+	pyplot.plot(history.history['val_loss'], color='orange', label='test')
+	# plot accuracy
+	pyplot.subplot(212)
+	pyplot.title('Classification Accuracy')
+	pyplot.plot(history.history['accuracy'], color='blue', label='train')
+	pyplot.plot(history.history['val_accuracy'], color='orange', label='test')
+	# save plot to file
+	filename = sys.argv[0].split('/')[-1]
+	pyplot.savefig(filename + '_plot.png')
+	pyplot.close()
+ 
+# run the test harness for evaluating a model
+def run_test_harness():
+	# load dataset
+	trainX, trainY, testX, testY = load_dataset()
+	# prepare pixel data
+	trainX, testX = prep_pixels(trainX, testX)
+	# define model
+	model = define_model()
+	# create data generator
+	datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, horizontal_flip=True)
+	# prepare iterator
+	it_train = datagen.flow(trainX, trainY, batch_size=64)
+	# fit model
+	steps = int(trainX.shape[0] / 64)
+	history = model.fit_generator(it_train, steps_per_epoch=steps, epochs=100, validation_data=(testX, testY), verbose=0)
+	# evaluate model
+	_, acc = model.evaluate(testX, testY, verbose=0)
+	print('> %.3f' % (acc * 100.0))
+	# learning curves
+	summarize_diagnostics(history)
+ 
+# entry point, run the test harness
+run_test_harness()
