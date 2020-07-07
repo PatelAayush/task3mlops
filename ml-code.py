@@ -2,7 +2,7 @@ import keras, sys
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 from keras.layers import Conv2D, MaxPooling2D
-from keras.datasets import mnist
+from keras.datasets import cifar10
 from keras.utils import np_utils
 
 # Making Command line arguments optional
