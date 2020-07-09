@@ -44,7 +44,7 @@ test_y = to_categorical(test_y)
 train_y = to_categorical(train_y)
 
 
-#Initials
+#Initials.
 neurons = 10
 accuracy = 0
 epochs = 1
